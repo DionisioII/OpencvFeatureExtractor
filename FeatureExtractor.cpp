@@ -17,22 +17,22 @@ Mat dst, detected_edges;
 Mat Blur;
 
 vector<vector<Point> > contours;
-vector<vector<Point> > contours1;
-vector<Vec4i> hierarchy;
-vector<Vec4i> hierarchy1;
 
+vector<Vec4i> hierarchy;
+
+
+/* to do: queste variabili andrebbero parametrizzate in base alla qualità(densità di pixel) e alla dimensione dell'immagine in input */
 int edgeThresh = 1;
 int lowThreshold=100;
 int const max_lowThreshold = 200;
 int ratio = 3;
 int kernel_size = 3;
+int convexityMinPixelDepth = 8;
+
 char* window_name = "Edge Map";
 char*  window_blur= "blur map";
 
-/**
- * @function CannyThreshold
- * @brief Trackbar callback - Canny thresholds input with a ratio 1:3
- */
+
 
 void FindingAngle(RotatedRect minRect){
 	if(minRect.size.width < minRect.size.height){
@@ -102,22 +102,25 @@ int FindConvexities(vector<vector<Point> > contours,int idx,Mat Draw){
 		
 		for (int cDefIt = 0; cDefIt < convexityDefectsSet.size(); cDefIt++)
 			{
+
 			int startIdx = convexityDefectsSet[cDefIt].val[0];
 			int endIdx = convexityDefectsSet[cDefIt].val[1];
 			int defectPtIdx = convexityDefectsSet[cDefIt].val[2];
 			double depth = (double)convexityDefectsSet[cDefIt].val[3]/256.0f;
-			//if(sqrt((abs(contours[idx][endIdx].x - contours[idx][startIdx].x)) ^ 2 + (abs(contours[idx][endIdx].y - contours[idx][startIdx].y)) ^ 2))>=100))
+			
 			double f=(abs(contours[idx][endIdx].x - contours[idx][startIdx].x))^2;
 			double g=(abs(contours[idx][endIdx].y - contours[idx][startIdx].y))^2;
 			if(
+
 				sqrt(
 					f+g
-				)>=8 && depth>=8
+				)>= convexityMinPixelDepth && depth>= convexityMinPixelDepth
 				){
 					convexieties++;
 					circle(Draw,  contours[idx][defectPtIdx], 10, Scalar(0, 0, 255), CV_FILLED, CV_AA);}
 			
 			}
+
 		return convexieties;
 
 }
@@ -141,8 +144,8 @@ void Measurings(vector<vector<Point> > contours,int idx,Mat& image,Scalar color)
 			}
 }
 
-// Better use findholes1
-int findHoles(vector<Vec4i> hierarchy,int idx,int alFoundHoles){ // dobbiamo trovare i nipoti
+// findHoles works better
+int recursivefindHoles(vector<Vec4i> hierarchy,int idx,int alFoundHoles){ // dobbiamo trovare i nipoti
 	int holes= alFoundHoles;
 	if(hierarchy[idx][2]!=-1){ //verifichiamo che abbia figli
 		
@@ -165,7 +168,7 @@ int findHoles(vector<Vec4i> hierarchy,int idx,int alFoundHoles){ // dobbiamo tro
 	return holes;
 
 }
-int findHoles1(vector<Vec4i> hierarchy,int idx){
+int findHoles(vector<Vec4i> hierarchy,int idx){
 	int holes=0;
 	if(hierarchy[idx][2]!=-1){ //verifichiamo che abbia figli
 		
@@ -204,9 +207,9 @@ void CannyThreshold(int,void*)
   
  
   Mat srcCopy;
+
   src.copyTo(srcCopy);
-  contours1=contours;
-  hierarchy1=hierarchy;
+  
   int idx = 0;
   int count=1;
   for( ; idx>=0; idx =hierarchy[idx] [0])
@@ -231,18 +234,11 @@ void CannyThreshold(int,void*)
 		
 		
 		int holes=findHoles( hierarchy, idx,0);
-		//int holes=findHoles1( hierarchy, idx);
+		
 		
 		
 		int d=idx;
-		/*if(hierarchy[idx][2]!=-1)
-			for(int i=hierarchy[idx][0];i!=-1;i=hierarchy[d][0]){
-				if(isContourConvex(contours[hierarchy[d][0]])&& contourArea(contours[hierarchy[d][0]])>=contourArea(contours[idx])/100000){
-					holes++;
-					drawContours( srcCopy, contours, d, Scalar(255,0,0), CV_FILLED,8 , hierarchy,10 );
-					
-				}d=hierarchy[d][0];
-			}*/
+		
 		
 
 		cout<<"contiene "<<holes<<" contorni interni \n";
